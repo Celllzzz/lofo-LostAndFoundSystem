@@ -56,7 +56,7 @@
                     });
                 @endif
 
-                // 3. Cek Validation Errors (Optional: Jika ingin popup error validasi form)
+                // 3. Cek Validation Errors
                 @if($errors->any())
                     Swal.fire({
                         icon: 'warning',
@@ -67,19 +67,38 @@
                 @endif
             });
 
-            // --- GLOBAL FUNCTIONS (Bisa dipanggil di view manapun) ---
+            // --- GLOBAL FUNCTIONS ---
 
             /**
-             * Universal Confirmation Dialog
-             * Cara pakai di tombol: onclick="confirmSubmit(event, 'Yakin hapus?')"
+             * Universal Confirmation Dialog (UPDATED)
+             * Fix: Sekarang otomatis menangkap name & value dari tombol submit
              */
             window.confirmSubmit = function(event, questionText = 'Apakah Anda yakin?', confirmText = 'Ya, Lanjutkan!') {
-                event.preventDefault(); // Mencegah submit form langsung
-                const form = event.target.closest('form'); // Mencari form terdekat
+                event.preventDefault(); // Mencegah submit default
+                
+                const button = event.target.closest('button'); // Ambil tombol yang diklik
+                const form = button.closest('form'); // Ambil form terkait
                 
                 if (!form) {
                     console.error('Form tidak ditemukan!');
                     return;
+                }
+
+                // FIX UTAMA: Jika tombol memiliki name & value (misal: status=verified),
+                // kita harus menambahkannya manual ke form karena form.submit() JS tidak membawanya.
+                if (button && button.name && button.value) {
+                    // Cek apakah input hidden sudah ada (untuk mencegah duplikasi jika diklik berkali-kali)
+                    let existingInput = form.querySelector(`input[name="${button.name}"]`);
+                    
+                    if (existingInput) {
+                        existingInput.value = button.value;
+                    } else {
+                        const hiddenInput = document.createElement('input');
+                        hiddenInput.type = 'hidden';
+                        hiddenInput.name = button.name;
+                        hiddenInput.value = button.value;
+                        form.appendChild(hiddenInput);
+                    }
                 }
 
                 Swal.fire({
@@ -95,7 +114,6 @@
                     focusCancel: true
                 }).then((result) => {
                     if (result.isConfirmed) {
-                        // Tampilkan loading saat proses submit
                         Swal.fire({
                             title: 'Memproses...',
                             text: 'Mohon tunggu sebentar',
@@ -110,11 +128,10 @@
 
             /**
              * Manual Alert Trigger
-             * Cara pakai: onclick="showAlert('info', 'Pesan info disini')"
              */
             window.showAlert = function(type, message) {
                 Swal.fire({
-                    icon: type, // 'success', 'error', 'warning', 'info', 'question'
+                    icon: type,
                     title: type.charAt(0).toUpperCase() + type.slice(1),
                     text: message,
                     confirmButtonColor: '#0ea5e9'

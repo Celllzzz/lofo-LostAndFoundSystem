@@ -109,7 +109,7 @@
                             </div>
 
                             <div class="col-span-2">
-                                <label class="block font-semibold text-sm text-slate-700 mb-2">Foto Barang (Opsional)</label>
+                                <label class="block font-semibold text-sm text-slate-700 mb-2">Foto Barang</label>
                                 
                                 <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-dashed rounded-xl transition-colors relative bg-slate-50 hover:bg-white cursor-pointer group"
                                      :class="type === 'lost' ? 'border-rose-200 hover:border-rose-300' : 'border-emerald-200 hover:border-emerald-300'">

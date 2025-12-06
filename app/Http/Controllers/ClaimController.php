@@ -45,7 +45,7 @@ class ClaimController extends Controller
     {
         $request->validate([
             'proof_description' => 'required|string',
-            'proof_file' => 'nullable|image|max:2048',
+            'proof_file' => 'required|image|max:2048',
         ]);
 
         // Cek apakah user ini pelapor barangnya sendiri (Opsional: cegah spam)
