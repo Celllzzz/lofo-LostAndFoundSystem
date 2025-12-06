@@ -8,7 +8,38 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class ClaimController extends Controller
-{
+{   
+    public function index(Request $request)
+    {
+        $query = Claim::with('item')
+                    ->where('user_id', Auth::id());
+
+        // 1. Logic Search (Cari berdasarkan nama barang atau deskripsi bukti)
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('proof_description', 'like', "%{$search}%")
+                  ->orWhereHas('item', function($q2) use ($search) {
+                      $q2->where('title', 'like', "%{$search}%");
+                  });
+            });
+        }
+
+        // 2. Logic Filter Status
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        // 3. Logic Pagination & Show Entries
+        $perPage = $request->input('per_page', 10);
+        
+        $claims = $query->latest()
+                        ->paginate($perPage)
+                        ->withQueryString(); // Agar parameter search tidak hilang saat ganti halaman
+
+        return view('claims.index', compact('claims'));
+    }
+    
     // Mahasiswa mengajukan klaim
     public function store(Request $request, Item $item)
     {

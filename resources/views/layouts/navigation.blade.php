@@ -1,14 +1,16 @@
-<nav x-data="{ open: false }" class="bg-white border-b border-orange-100 shadow-sm sticky top-0 z-50">
+<nav x-data="{ open: false }" class="bg-white/95 backdrop-blur-md border-b border-orange-200 shadow-sm sticky top-0 z-50 transition-all duration-300">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between h-16">
             <div class="flex">
                 <div class="shrink-0 flex items-center">
                     <a href="{{ route('dashboard') }}" class="flex items-center group">
-                        <svg class="w-8 h-8 text-sky-400 group-hover:text-sky-500 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9v.01M10 13a3 3 0 003-3"></path>
-                        </svg>
-                        <span class="ml-2 text-xl font-bold text-slate-600 group-hover:text-slate-800 transition">Lo<span class="text-sky-400">Fo</span></span>
+                        <div class="bg-orange-50 p-2 rounded-full group-hover:bg-orange-100 transition duration-300">
+                            <svg class="w-6 h-6 text-sky-500 group-hover:scale-110 transition duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9v.01M10 13a3 3 0 003-3"></path>
+                            </svg>
+                        </div>
+                        <span class="ml-2 text-xl font-bold text-slate-700 tracking-tight group-hover:text-slate-900 transition">Lo<span class="text-sky-500">Fo</span></span>
                     </a>
                 </div>
 
@@ -18,6 +20,9 @@
                     </x-nav-link>
                     <x-nav-link :href="route('items.create')" :active="request()->routeIs('items.create')">
                         {{ __('Lapor Barang') }}
+                    </x-nav-link>
+                    <x-nav-link :href="route('claims.index')" :active="request()->routeIs('claims.index')">
+                        {{ __('Klaim Saya') }}
                     </x-nav-link>
                     
                     @if(auth()->user()->role !== 'mahasiswa')
@@ -31,7 +36,7 @@
             <div class="hidden sm:flex sm:items-center sm:ms-6">
                 <x-dropdown align="right" width="48">
                     <x-slot name="trigger">
-                        <button class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-full text-slate-500 bg-orange-50 hover:text-sky-600 hover:bg-orange-100 focus:outline-none transition ease-in-out duration-150">
+                        <button class="inline-flex items-center px-4 py-2 border border-orange-100 text-sm leading-4 font-medium rounded-full text-slate-600 bg-white hover:text-sky-600 hover:bg-orange-50 focus:outline-none transition ease-in-out duration-300 shadow-sm hover:shadow-md">
                             <div>{{ Auth::user()->name }}</div>
 
                             <div class="ms-1">
@@ -43,16 +48,14 @@
                     </x-slot>
 
                     <x-slot name="content">
-                        <x-dropdown-link :href="route('profile.edit')">
+                        <x-dropdown-link :href="route('profile.edit')" class="hover:bg-orange-50 hover:text-sky-600">
                             {{ __('Profile') }}
                         </x-dropdown-link>
 
                         <form method="POST" action="{{ route('logout') }}">
                             @csrf
-
-                            <x-dropdown-link :href="route('logout')"
-                                    onclick="event.preventDefault();
-                                                this.closest('form').submit();">
+                            <x-dropdown-link :href="route('logout')" class="hover:bg-red-50 hover:text-red-600"
+                                    onclick="event.preventDefault(); this.closest('form').submit();">
                                 {{ __('Log Out') }}
                             </x-dropdown-link>
                         </form>
@@ -61,7 +64,7 @@
             </div>
 
             <div class="-me-2 flex items-center sm:hidden">
-                <button @click="open = ! open" class="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:bg-gray-100 focus:text-gray-500 transition duration-150 ease-in-out">
+                <button @click="open = ! open" class="inline-flex items-center justify-center p-2 rounded-md text-slate-400 hover:text-sky-500 hover:bg-orange-50 focus:outline-none transition duration-150 ease-in-out">
                     <svg class="h-6 w-6" stroke="currentColor" fill="none" viewBox="0 0 24 24">
                         <path :class="{'hidden': open, 'inline-flex': ! open }" class="inline-flex" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
                         <path :class="{'hidden': ! open, 'inline-flex': open }" class="hidden" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -71,7 +74,7 @@
         </div>
     </div>
 
-    <div :class="{'block': open, 'hidden': ! open}" class="hidden sm:hidden bg-orange-50">
+    <div :class="{'block': open, 'hidden': ! open}" class="hidden sm:hidden bg-white border-t border-orange-100">
         <div class="pt-2 pb-3 space-y-1">
             <x-responsive-nav-link :href="route('items.index')" :active="request()->routeIs('items.index')">
                 {{ __('Beranda') }}
@@ -79,11 +82,14 @@
             <x-responsive-nav-link :href="route('items.create')" :active="request()->routeIs('items.create')">
                 {{ __('Lapor Barang') }}
             </x-responsive-nav-link>
+            <x-nav-link :href="route('claims.index')" :active="request()->routeIs('claims.index')">
+                {{ __('Klaim Saya') }}
+            </x-nav-link>
         </div>
 
-        <div class="pt-4 pb-1 border-t border-orange-200">
+        <div class="pt-4 pb-1 border-t border-orange-100 bg-orange-50/50">
             <div class="px-4">
-                <div class="font-medium text-base text-slate-800">{{ Auth::user()->name }}</div>
+                <div class="font-bold text-base text-slate-800">{{ Auth::user()->name }}</div>
                 <div class="font-medium text-sm text-slate-500">{{ Auth::user()->email }}</div>
             </div>
 
@@ -94,10 +100,8 @@
 
                 <form method="POST" action="{{ route('logout') }}">
                     @csrf
-
                     <x-responsive-nav-link :href="route('logout')"
-                            onclick="event.preventDefault();
-                                        this.closest('form').submit();">
+                            onclick="event.preventDefault(); this.closest('form').submit();">
                         {{ __('Log Out') }}
                     </x-responsive-nav-link>
                 </form>

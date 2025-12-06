@@ -38,6 +38,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // Ajukan Klaim
     Route::post('/items/{item}/claim', [ClaimController::class, 'store'])->name('claims.store');
+    Route::get('/my-claims', [ClaimController::class, 'index'])->name('claims.index');
 });
 
 // --- AREA ADMIN & SECURITY ---

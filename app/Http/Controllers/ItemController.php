@@ -54,11 +54,11 @@ class ItemController extends Controller
         }
 
         // AMBIL INPUT PER_PAGE (Default 12 jika tidak dipilih)
-        $perPage = $request->input('per_page', 10);
+        $perPage = $request->input('per_page', 12);
 
         // Pastikan user tidak menginput angka aneh (validasi manual sederhana)
-        if (!in_array($perPage, [10, 25, 50, 100])) {
-            $perPage = 10;
+        if (!in_array($perPage, [12, 24, 48, 96])) {
+            $perPage = 12;
         }
 
         // Gunakan variabel $perPage disini
@@ -104,7 +104,7 @@ class ItemController extends Controller
             'image_path' => $path,
             // Jika lapor "Hilang", otomatis verified. 
             // Jika "Temuan", butuh verifikasi satpam (false).
-            'is_verified' => $request->type === 'lost' ? true : false,
+
         ]);
 
         return redirect()->route('items.index')->with('success', 'Laporan berhasil dibuat!');
