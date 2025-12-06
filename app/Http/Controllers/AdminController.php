@@ -4,50 +4,88 @@ namespace App\Http\Controllers;
 
 use App\Models\Item;
 use App\Models\Claim;
-use App\Models\User;      
-use App\Models\Category; 
+use App\Models\User;
+use App\Models\Category;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rules;
 
 class AdminController extends Controller
 {
-   // =========================================================
-    // HALAMAN 1: DASHBOARD LAPORAN (Item Management)
+    // =========================================================
+    // DASHBOARD UTAMA (Admin & Security)
     // =========================================================
     public function dashboard(Request $request)
     {
         $user = Auth::user();
 
-        // JIKA SECURITY: Redirect ke tampilan khusus security (yang lama)
+        // ----------------------------------------------------
+        // 1. LOGIKA UNTUK SECURITY
+        // ----------------------------------------------------
         if ($user->role === 'security') {
             $unverifiedFoundItems = Item::where('type', 'found')->where('is_verified', false)->latest()->get();
             $pendingClaims = Claim::where('status', 'pending')->with(['item', 'user'])->latest()->get();
             $approvedClaims = Claim::where('status', 'verified')->with(['item', 'user'])->latest()->get();
-            return view('admin.dashboard_security', compact('unverifiedFoundItems', 'pendingClaims', 'approvedClaims'));
+            
+            // Query untuk Tab Database Laporan (Lengkap)
+            $query = Item::with(['user', 'category']);
+            if ($request->filled('search')) {
+                $query->where(function($q) use ($request) {
+                    $q->where('title', 'like', '%' . $request->search . '%')
+                      ->orWhere('description', 'like', '%' . $request->search . '%');
+                });
+            }
+            if ($request->filled('status')) $query->where('status', $request->status);
+            if ($request->filled('type')) $query->where('type', $request->type);
+            
+            // Variabel $allReports dikirim ke view security
+            $allReports = $query->latest()->paginate($request->input('per_page', 10))->withQueryString();
+
+            return view('admin.dashboard_security', compact(
+                'unverifiedFoundItems', 
+                'pendingClaims', 
+                'approvedClaims',
+                'allReports' 
+            ));
         }
 
-        // JIKA ADMIN: Tampilkan Dashboard Laporan Lengkap
+        // ----------------------------------------------------
+        // 2. LOGIKA UNTUK ADMIN
+        // ----------------------------------------------------
         if ($user->role === 'admin') {
-            // 1. STATISTIK RINGKAS
+            // A. DATA GRAFIK
+            $months = collect([]);
+            $lostStats = collect([]);
+            $returnedStats = collect([]);
+            
+            for ($i = 5; $i >= 0; $i--) {
+                $date = Carbon::now()->subMonths($i);
+                $months->push($date->format('M Y'));
+                $lostStats->push(Item::where('type', 'lost')->whereMonth('created_at', $date->month)->count());
+                $returnedStats->push(Item::whereIn('status', ['returned', 'claimed'])->whereMonth('updated_at', $date->month)->count());
+            }
+
+            // B. STATISTIK KOTAK
             $stats = [
                 'total' => Item::count(),
                 'open' => Item::where('status', 'open')->count(),
                 'claimed' => Item::where('status', 'claimed')->count(),
                 'returned' => Item::where('status', 'returned')->count(),
                 'cancelled' => Item::where('status', 'cancelled')->count(),
-                'unverified' => Item::where('is_verified', false)->count(), // Aksi Cepat
+                'unverified' => Item::where('is_verified', false)->count(),
             ];
 
-            // 2. QUERY DATA LAPORAN
+            // C. QUERY DATA LAPORAN (Main Table)
             $query = Item::with(['user', 'category']);
 
-            // Aksi Cepat: Filter Unverified
+            // Filter Aksi Cepat
             if ($request->get('filter') === 'unverified') {
                 $query->where('is_verified', false);
             }
 
-            // Filter Search
+            // Filter Pencarian & Status
             if ($request->filled('search')) {
                 $query->where(function($q) use ($request) {
                     $q->where('title', 'like', '%' . $request->search . '%')
@@ -57,20 +95,26 @@ class AdminController extends Controller
             if ($request->filled('status')) $query->where('status', $request->status);
             if ($request->filled('type')) $query->where('type', $request->type);
 
-            $items = $query->latest()->paginate($request->input('per_page', 10))->withQueryString();
+            // Variabel $allReports dikirim ke view admin (PERBAIKAN DISINI)
+            $allReports = $query->latest()->paginate($request->input('per_page', 10))->withQueryString();
 
-            return view('admin.dashboard_admin', compact('stats', 'items'));
+            return view('admin.dashboard_admin', compact(
+                'stats', 
+                'allReports', // <--- Pastikan nama variabel ini sama dengan di View
+                'months', 
+                'lostStats', 
+                'returnedStats'
+            ));
         }
         
         abort(403);
     }
 
     // =========================================================
-    // HALAMAN 2: DASHBOARD KLAIM (Claim Management)
+    // HALAMAN 2: DASHBOARD KLAIM (Admin Only)
     // =========================================================
     public function claimsDashboard(Request $request)
     {
-        // 1. STATISTIK KLAIM
         $stats = [
             'total' => Claim::count(),
             'pending' => Claim::where('status', 'pending')->count(),
@@ -79,18 +123,11 @@ class AdminController extends Controller
             'completed' => Claim::where('status', 'completed')->count(),
         ];
 
-        // 2. QUERY DATA KLAIM
         $query = Claim::with(['item', 'user']);
 
-        // Aksi Cepat: Filter Pending & Ready for Pickup
-        if ($request->get('filter') === 'pending') {
-            $query->where('status', 'pending');
-        }
-        if ($request->get('filter') === 'ready') {
-            $query->where('status', 'verified');
-        }
+        if ($request->get('filter') === 'pending') $query->where('status', 'pending');
+        if ($request->get('filter') === 'ready') $query->where('status', 'verified');
 
-        // Search (Nama Barang atau Nama User)
         if ($request->filled('search')) {
             $search = $request->search;
             $query->whereHas('item', function($q) use ($search) {
@@ -107,13 +144,12 @@ class AdminController extends Controller
     }
 
     // =========================================================
-    // LOGIKA PROSES (VERIFIKASI & UPDATE)
+    // LOGIKA PROSES
     // =========================================================
-    
     public function verifyItem(Item $item)
     {
         $item->update(['is_verified' => true]);
-        return back()->with('success', 'Fisik barang berhasil diverifikasi.');
+        return back()->with('success', 'Laporan berhasil diverifikasi.');
     }
 
     public function updateItemStatus(Request $request, Item $item)
@@ -144,91 +180,22 @@ class AdminController extends Controller
         return back()->with('success', 'Status klaim diperbarui.');
     }
 
-    // =========================================================
-    // MANAJEMEN USERS (CRUD)
-    // =========================================================
-    public function usersIndex() 
-    {
-        $users = User::latest()->paginate(10);
-        return view('admin.users.index', compact('users'));
+    // CRUD User & Category
+    public function usersIndex() { $users = User::latest()->paginate(10); return view('admin.users.index', compact('users')); }
+    public function usersStore(Request $request) { 
+        $request->validate(['name'=>'required','email'=>'required|email|unique:users','role'=>'required','password'=>'required|confirmed']);
+        User::create(['name'=>$request->name,'email'=>$request->email,'role'=>$request->role,'password'=>Hash::make($request->password)]);
+        return back()->with('success','User created.');
     }
-
-    public function usersStore(Request $request) 
-    {
-        $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
-            'role' => ['required', 'in:admin,security,mahasiswa'],
-            'password' => ['required', 'confirmed', \Illuminate\Validation\Rules\Password::defaults()],
-        ]);
-
-        User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'role' => $request->role,
-            'password' => \Illuminate\Support\Facades\Hash::make($request->password),
-        ]);
-
-        return back()->with('success', 'User berhasil ditambahkan.');
+    public function usersUpdate(Request $request, User $user) {
+        $request->validate(['name'=>'required','email'=>'required|email|unique:users,email,'.$user->id,'role'=>'required']);
+        $data=$request->only('name','email','role'); if($request->filled('password')){$data['password']=Hash::make($request->password);} $user->update($data);
+        return back()->with('success','User updated.');
     }
-
-    public function usersUpdate(Request $request, User $user) 
-    {
-        $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'email', 'max:255', 'unique:users,email,'.$user->id],
-            'role' => ['required', 'in:admin,security,mahasiswa'],
-        ]);
-
-        $data = $request->only('name', 'email', 'role');
-        
-        // Update password hanya jika diisi
-        if($request->filled('password')) {
-            $request->validate(['password' => ['confirmed', \Illuminate\Validation\Rules\Password::defaults()]]);
-            $data['password'] = \Illuminate\Support\Facades\Hash::make($request->password);
-        }
-
-        $user->update($data);
-        return back()->with('success', 'Data user diperbarui.');
-    }
-
-    public function usersDestroy(User $user) 
-    {
-        if($user->id === Auth::id()) return back()->with('error', 'Tidak bisa menghapus akun sendiri.');
-        
-        $user->delete();
-        return back()->with('success', 'User berhasil dihapus.');
-    }
-
-    // =========================================================
-    // MANAJEMEN KATEGORI (CRUD)
-    // =========================================================
-    public function categoriesIndex() 
-    {
-        $categories = Category::withCount('items')->latest()->paginate(10);
-        return view('admin.categories.index', compact('categories'));
-    }
-
-    public function categoriesStore(Request $request) 
-    {
-        $request->validate(['name' => 'required|string|max:50|unique:categories']);
-        Category::create($request->all());
-        return back()->with('success', 'Kategori ditambahkan.');
-    }
-
-    public function categoriesUpdate(Request $request, Category $category) 
-    {
-        $request->validate(['name' => 'required|string|max:50|unique:categories,name,'.$category->id]);
-        $category->update($request->all());
-        return back()->with('success', 'Kategori diperbarui.');
-    }
-
-    public function categoriesDestroy(Category $category) 
-    {
-        if($category->items_count > 0) {
-            return back()->with('error', 'Kategori ini sedang digunakan oleh barang, tidak bisa dihapus.');
-        }
-        $category->delete();
-        return back()->with('success', 'Kategori dihapus.');
-    }
+    public function usersDestroy(User $user) { if($user->id===Auth::id())return back()->with('error','No self-delete.'); $user->delete(); return back()->with('success','User deleted.'); }
+    
+    public function categoriesIndex() { $categories = Category::withCount('items')->latest()->paginate(10); return view('admin.categories.index', compact('categories')); }
+    public function categoriesStore(Request $request) { Category::create($request->validate(['name'=>'required|unique:categories'])); return back()->with('success','Category created.'); }
+    public function categoriesUpdate(Request $request, Category $category) { $category->update($request->validate(['name'=>'required|unique:categories,name,'.$category->id])); return back()->with('success','Category updated.'); }
+    public function categoriesDestroy(Category $category) { if($category->items_count>0)return back()->with('error','Category in use.'); $category->delete(); return back()->with('success','Deleted.'); }
 }

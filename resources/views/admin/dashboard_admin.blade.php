@@ -113,9 +113,9 @@
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-slate-100">
-                            @forelse($items as $index => $item)
+                            @forelse($allReports as $index => $item)
                             <tr class="hover:bg-slate-50/80 transition group">
-                                <td class="px-6 py-4 text-center font-bold text-slate-400">{{ $items->firstItem() + $index }}</td>
+                                <td class="px-6 py-4 text-center font-bold text-slate-400">{{ $allReports->firstItem() + $index }}</td>
                                 <td class="px-6 py-4">
                                     <div class="flex items-center gap-3">
                                         <img src="{{ $item->image_path ? asset('storage/'.$item->image_path) : 'https://via.placeholder.com/50' }}" class="w-12 h-12 rounded-xl object-cover bg-slate-100 border border-slate-200 shadow-sm">
@@ -300,7 +300,7 @@
                         </tbody>
                     </table>
                 </div>
-                <div class="p-4 border-t border-slate-100 bg-slate-50/50">{{ $items->links() }}</div>
+                <div class="p-4 border-t border-slate-100 bg-slate-50/50">{{ $allReports->links() }}</div>
             </div>
         </div>
     </div>
