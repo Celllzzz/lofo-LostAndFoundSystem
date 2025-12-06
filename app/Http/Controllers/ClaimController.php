@@ -70,20 +70,35 @@ class ClaimController extends Controller
     }
 
     // Admin/Security Menyetujui/Menolak Klaim
+    // Pada method updateStatus
     public function updateStatus(Request $request, Claim $claim)
     {
-        $request->validate(['status' => 'required|in:verified,rejected']);
+        $request->validate(['status' => 'required|in:verified,rejected,completed']);
 
-        // Update status klaim
+        // Jika status 'completed' (Barang diambil)
+        if ($request->status == 'completed') {
+            $claim->update([
+                'status' => 'completed', // Status klaim selesai
+                'verified_by' => auth()->id()
+            ]);
+            
+            // Update status barang jadi 'returned' (sudah dikembalikan)
+            $claim->item->update(['status' => 'returned']); // Pastikan enum 'returned' ada di database items
+
+            return back()->with('success', 'Serah terima berhasil. Kasus ditutup.');
+        }
+
+        // Logika Verified/Rejected biasa
         $claim->update([
             'status' => $request->status,
-            'verified_by' => Auth::id(),
-            'verification_notes' => $request->notes, // Catatan admin
+            'verified_by' => auth()->id(),
+            'verification_notes' => $request->notes,
         ]);
 
-        // Jika klaim diterima, otomatis barang jadi 'claimed'
         if ($request->status == 'verified') {
             $claim->item->update(['status' => 'claimed']);
+        } elseif ($request->status == 'rejected') {
+            $claim->item->update(['status' => 'open']); // Buka lagi status barangnya
         }
 
         return back()->with('success', 'Status klaim diperbarui.');

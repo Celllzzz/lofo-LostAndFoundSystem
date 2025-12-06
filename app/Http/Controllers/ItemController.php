@@ -93,6 +93,8 @@ class ItemController extends Controller
             $path = $request->file('image')->store('items', 'public');
         }
 
+        $is_verified = auth()->user()->role === 'admin' || auth()->user()->role === 'security';
+        
         Item::create([
             'user_id' => Auth::id(),
             'category_id' => $request->category_id,
@@ -104,7 +106,8 @@ class ItemController extends Controller
             'image_path' => $path,
             // Jika lapor "Hilang", otomatis verified. 
             // Jika "Temuan", butuh verifikasi satpam (false).
-
+            'is_verified' => $is_verified, // Tambahkan logika ini
+            'status' => 'open',
         ]);
 
         return redirect()->route('items.index')->with('success', 'Laporan berhasil dibuat!');
