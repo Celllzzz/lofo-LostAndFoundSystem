@@ -10,7 +10,7 @@
         .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 
-    <div class="min-h-screen bg-orange-50/50" 
+    <div class="min-h-screen bg-slate-50" 
          x-data="{ 
             search: '{{ request('search') }}',
             isLoading: false,
@@ -23,6 +23,35 @@
             }
          }">
         
+        <div class="bg-white border-b border-slate-100 pt-8 pb-6">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex flex-col md:flex-row md:items-end justify-between gap-6">
+                    <div>
+                        <div class="inline-flex items-center px-3 py-1 rounded-full bg-orange-50 border border-orange-100 text-[10px] font-bold text-orange-600 mb-3 shadow-sm">
+                            <span class="w-1.5 h-1.5 rounded-full bg-orange-500 mr-2 animate-pulse"></span>
+                            Portal Informasi Kampus
+                        </div>
+                        <h1 class="text-3xl font-black text-slate-800 tracking-tight mb-2">
+                            Papan <span class="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-rose-500">Barang Hilang & Temuan</span>
+                        </h1>
+                        <p class="text-slate-500 text-sm leading-relaxed max-w-2xl">
+                            Pantau laporan terkini di sekitar kampus. Gunakan fitur pencarian dan filter di bawah untuk mempermudah menemukan barang Anda.
+                        </p>
+                    </div>
+                    
+                    <div class="hidden md:flex items-center gap-4">
+                        <div class="text-right">
+                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total Laporan</p>
+                            <p class="text-2xl font-black text-slate-800">{{ $items->total() }} <span class="text-sm font-medium text-slate-400">Item</span></p>
+                        </div>
+                        <div class="w-12 h-12 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-400 border border-slate-200">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div class="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-orange-100 shadow-sm transition-all duration-300">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
                 <form x-ref="filterForm" action="{{ route('items.index') }}" method="GET" class="flex flex-col lg:flex-row justify-between items-center gap-4 animate-fade-in">
@@ -87,33 +116,25 @@
                 
                 <div x-data="{ 
                         modalOpen: false,
-                        mode: 'detail', // 'detail' | 'claim'
+                        mode: 'detail',
                         photoPreview: null,
                         fileName: null,
-                        
                         openDetail() { this.mode = 'detail'; this.modalOpen = true; },
                         openClaim() { this.mode = 'claim'; },
-                        
-                        // Logic Upload Foto yang lebih stabil
                         handleFileUpload(e) {
                             const file = e.target.files[0];
                             if (!file) return;
                             this.fileName = file.name;
                             const reader = new FileReader();
-                            reader.onload = (event) => {
-                                this.photoPreview = event.target.result;
-                            };
+                            reader.onload = (event) => { this.photoPreview = event.target.result; };
                             reader.readAsDataURL(file);
                         },
                         clearPreview() {
                             this.photoPreview = null;
                             this.fileName = null;
-                            // Reset input file value
                             if(this.$refs.photoInput) this.$refs.photoInput.value = '';
                         },
-                        triggerInput() {
-                            this.$refs.photoInput.click();
-                        }
+                        triggerInput() { this.$refs.photoInput.click(); }
                      }" 
                      class="group relative bg-white rounded-2xl shadow-[0_2px_8px_rgb(0,0,0,0.04)] hover:shadow-[0_8px_24px_rgb(0,0,0,0.08)] hover:-translate-y-1 transition-all duration-300 border border-slate-100 overflow-hidden flex flex-col h-full animate-fade-in">
                     

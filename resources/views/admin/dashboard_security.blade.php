@@ -1,5 +1,17 @@
 <x-app-layout>
-    <div class="min-h-screen bg-slate-50 font-sans" x-data="{ activeTab: 'items_found' }">
+    <div class="min-h-screen bg-slate-50 font-sans" 
+         x-data="{ 
+            activeTab: '{{ request('tab', 'items_found') }}',
+            search: '{{ request('search') }}',
+            isLoading: false,
+            submitSearch() {
+                this.isLoading = true;
+                clearTimeout(this.typingTimer);
+                this.typingTimer = setTimeout(() => {
+                    this.$refs.filterForm.submit();
+                }, 600);
+            }
+         }">
         
         <div class="bg-white border-b border-orange-200 shadow-sm sticky top-0 z-30">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
@@ -257,7 +269,10 @@
             <div x-show="activeTab === 'database'" style="display: none;" class="animate-fade-in">
                 <div class="bg-white rounded-[2rem] shadow-sm border border-slate-100 overflow-hidden">
                     <div class="p-6 border-b border-slate-100 bg-slate-50/30">
-                        <form action="{{ route('admin.dashboard') }}" method="GET" class="grid grid-cols-2 md:grid-cols-5 gap-3">
+                        {{-- FORM FILTER --}}
+                        <form x-ref="filterForm" action="{{ route('admin.dashboard') }}" method="GET" class="grid grid-cols-2 md:grid-cols-5 gap-3">
+                            <input type="hidden" name="tab" value="database"> {{-- KEEP TAB ACTIVE --}}
+
                              <div class="col-span-2 md:col-span-1 flex items-center gap-2">
                                 <span class="text-xs font-bold text-slate-500">Show</span>
                                 <select name="per_page" onchange="this.form.submit()" class="text-xs border-slate-200 rounded-xl focus:ring-slate-500 w-full cursor-pointer bg-white">
@@ -278,8 +293,11 @@
                                 <option value="lost" {{ request('type') == 'lost' ? 'selected' : '' }}>Hilang</option>
                                 <option value="found" {{ request('type') == 'found' ? 'selected' : '' }}>Temuan</option>
                             </select>
-                            <div class="col-span-2">
-                                <input type="text" name="search" value="{{ request('search') }}" placeholder="Cari Judul / ID / Deskripsi..." class="w-full text-xs border-slate-200 rounded-xl focus:ring-slate-500 bg-white">
+                            <div class="col-span-2 relative group">
+                                <input type="text" name="search" x-model="search" @input="submitSearch()" placeholder="Cari Judul / ID / Deskripsi..." class="w-full text-xs border-slate-200 rounded-xl focus:ring-slate-500 bg-white pl-10">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none" :class="isLoading ? 'text-sky-500' : 'text-slate-400'">
+                                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                                </div>
                             </div>
                         </form>
                     </div>
@@ -329,48 +347,31 @@
                                             <span class="text-[10px] bg-orange-100 text-orange-600 px-2 py-1 rounded font-bold border border-orange-200">Pending</span>
                                         @endif
                                     </td>
-                                    
                                     <td class="px-6 py-4 text-right">
                                         <div x-data="{ detailOpen: false }">
                                             <button @click="detailOpen = true" class="ml-auto flex items-center px-3 py-2 text-sky-600 bg-sky-50 hover:bg-sky-100 border border-sky-100 rounded-xl transition shadow-sm text-xs font-bold" title="Lihat Detail">
                                                 <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
                                                 Lihat
                                             </button>
-
                                             <template x-teleport="body">
                                                 <div x-show="detailOpen" class="fixed inset-0 z-[99] flex items-center justify-center bg-black/60 backdrop-blur-md p-4" 
                                                         style="display: none;"
                                                         x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
                                                         x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0">
-                                                    
                                                     <div class="bg-white rounded-[2rem] w-full max-w-4xl overflow-hidden shadow-2xl relative flex flex-col md:flex-row transform transition-all" @click.away="detailOpen = false"
                                                             x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 scale-90 translate-y-4" x-transition:enter-end="opacity-100 scale-100 translate-y-0"
                                                             x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100 scale-100 translate-y-0" x-transition:leave-end="opacity-0 scale-90 translate-y-4">
-                                                        
                                                         <button @click="detailOpen = false" class="absolute top-4 right-4 z-50 bg-black/30 hover:bg-black/50 text-white p-2 rounded-full backdrop-blur-md transition"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
-
                                                         <div class="w-full md:w-1/2 bg-slate-900 relative min-h-[300px]">
                                                             @if($item->image_path) <img src="{{ asset('storage/'.$item->image_path) }}" class="w-full h-full object-cover opacity-90"> @endif
-                                                            <div class="absolute top-6 left-6">
-                                                                <span class="px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest shadow-lg backdrop-blur-md text-white border border-white/20 {{ $item->type == 'lost' ? 'bg-rose-500' : 'bg-emerald-500' }}">
-                                                                    {{ $item->type == 'lost' ? 'Laporan Hilang' : 'Laporan Temuan' }}
-                                                                </span>
-                                                            </div>
+                                                            <div class="absolute top-6 left-6"><span class="px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest shadow-lg backdrop-blur-md text-white border border-white/20 {{ $item->type == 'lost' ? 'bg-rose-500' : 'bg-emerald-500' }}">{{ $item->type == 'lost' ? 'Laporan Hilang' : 'Laporan Temuan' }}</span></div>
                                                         </div>
-
                                                         <div class="w-full md:w-1/2 p-8 flex flex-col">
                                                             <div>
-                                                                <div class="flex items-center justify-between mb-2">
-                                                                    <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">{{ $item->category->name }}</span>
-                                                                    <span class="text-xs font-bold text-slate-400">{{ $item->created_at->format('d M Y') }}</span>
-                                                                </div>
+                                                                <div class="flex items-center justify-between mb-2"><span class="text-xs font-bold text-slate-400 uppercase tracking-wider">{{ $item->category->name }}</span><span class="text-xs font-bold text-slate-400">{{ $item->created_at->format('d M Y') }}</span></div>
                                                                 <h2 class="text-3xl font-black text-slate-800 leading-tight mb-6">{{ $item->title }}</h2>
                                                                 <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 text-sm text-slate-700 mb-6 leading-relaxed">{{ $item->description }}</div>
-                                                                <div class="grid grid-cols-2 gap-4 text-xs text-slate-500 mt-auto">
-                                                                    <div><b>Pelapor:</b> {{ $item->user->name }}</div>
-                                                                    <div><b>Lokasi:</b> {{ $item->location }}</div>
-                                                                    <div><b>Status:</b> <span class="uppercase font-bold text-slate-700">{{ $item->status }}</span></div>
-                                                                </div>
+                                                                <div class="grid grid-cols-2 gap-4 text-xs text-slate-500 mt-auto"><div><b>Pelapor:</b> {{ $item->user->name }}</div><div><b>Lokasi:</b> {{ $item->location }}</div><div><b>Status:</b> <span class="uppercase font-bold text-slate-700">{{ $item->status }}</span></div></div>
                                                             </div>
                                                         </div>
                                                     </div>

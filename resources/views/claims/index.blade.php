@@ -71,6 +71,10 @@
                             class="px-4 py-1.5 text-xs font-bold rounded-full transition-all duration-300 {{ request('status') == 'rejected' ? 'bg-rose-500 text-white shadow-md shadow-rose-200 transform scale-105' : 'bg-white text-slate-500 border border-slate-200 hover:bg-rose-50 hover:text-rose-600' }}">
                             Ditolak
                         </button>
+                        <button type="submit" name="status" value="completed" 
+                            class="px-4 py-1.5 text-xs font-bold rounded-full transition-all duration-300 {{ request('status') == 'completed' ? 'bg-blue-500 text-white shadow-md shadow-blue-200 transform scale-105' : 'bg-white text-slate-500 border border-slate-200 hover:bg-blue-50 hover:text-blue-600' }}">
+                            Selesai
+                        </button>
                     </div>
 
                     <div class="w-full lg:w-72 relative order-3">
@@ -188,6 +192,11 @@
                                         <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-rose-100 text-rose-800 border border-rose-200">
                                             <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                                             Ditolak
+                                        </span>
+                                    @elseif($claim->status == 'completed')
+                                        <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-600 border border-slate-200">
+                                            <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                            Selesai
                                         </span>
                                     @endif
                                 </td>

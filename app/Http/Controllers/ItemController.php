@@ -16,9 +16,10 @@ class ItemController extends Controller
         // Ambil data kategori untuk dropdown filter
         $categories = Category::all();
 
-        // Query Dasar
+        // Query Dasar (Verified & Open)
         $query = Item::with('category', 'user')
-            ->where('status', 'open'); // Hanya tampilkan barang yang masih aktif
+            ->where('status', 'open')     // Status masih aktif
+            ->where('is_verified', 1);    // Sudah diverifikasi admin
 
         // 1. Filter Pencarian (Search)
         if ($request->filled('search')) {
@@ -89,14 +90,33 @@ class ItemController extends Controller
 
         $path = null;
         if ($request->hasFile('image')) {
-            // Simpan gambar di folder 'items'
             $path = $request->file('image')->store('items', 'public');
         }
 
-        $is_verified = auth()->user()->role === 'admin' || auth()->user()->role === 'security';
+        $user = auth()->user();
+        $is_verified = false;
+        $message = '';
+
+        // Logika Verifikasi & Pesan
+        if ($user->role === 'admin' || $user->role === 'security') {
+            // Jika Petugas (Admin/Satpam) yang input, otomatis verified
+            $is_verified = true;
+            $message = 'Laporan berhasil dibuat dan telah terverifikasi otomatis.';
+        } else {
+            // Jika User Biasa (Mahasiswa) yang input
+            $is_verified = false;
+
+            if ($request->type === 'found') {
+                // Pesan khusus barang temuan: Instruksi ke Pos Satpam
+                $message = 'Laporan temuan berhasil dikirim. Mohon SEGERA bawa barang ke Pos Satpam untuk verifikasi fisik agar laporan tampil.';
+            } else {
+                // Pesan barang hilang: Menunggu Approval Admin
+                $message = 'Laporan kehilangan berhasil dikirim. Menunggu persetujuan Admin untuk ditampilkan.';
+            }
+        }
         
         Item::create([
-            'user_id' => Auth::id(),
+            'user_id' => $user->id,
             'category_id' => $request->category_id,
             'title' => $request->title,
             'type' => $request->type,
@@ -104,13 +124,11 @@ class ItemController extends Controller
             'date' => $request->date,
             'location' => $request->location,
             'image_path' => $path,
-            // Jika lapor "Hilang", otomatis verified. 
-            // Jika "Temuan", butuh verifikasi satpam (false).
-            'is_verified' => $is_verified, // Tambahkan logika ini
+            'is_verified' => $is_verified, 
             'status' => 'open',
         ]);
 
-        return redirect()->route('items.index')->with('success', 'Laporan berhasil dibuat!');
+        return redirect()->route('items.index')->with('success', $message);
     }
     
     // Lihat Detail Barang

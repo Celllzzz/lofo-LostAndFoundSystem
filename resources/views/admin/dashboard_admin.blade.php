@@ -1,7 +1,18 @@
 <x-app-layout>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-    <div class="min-h-screen bg-slate-50 font-sans">
+    <div class="min-h-screen bg-slate-50 font-sans" 
+         x-data="{ 
+            search: '{{ request('search') }}',
+            isLoading: false,
+            submitSearch() {
+                this.isLoading = true;
+                clearTimeout(this.typingTimer);
+                this.typingTimer = setTimeout(() => {
+                    this.$refs.filterForm.submit();
+                }, 600);
+            }
+         }">
         
         <div class="bg-white border-b border-slate-200 shadow-sm sticky top-0 z-30">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
@@ -72,7 +83,8 @@
                         @endif
                     </div>
 
-                    <form action="{{ route('admin.dashboard') }}" method="GET" class="grid grid-cols-2 md:grid-cols-5 gap-3">
+                    {{-- FORM FILTER & SEARCH --}}
+                    <form x-ref="filterForm" action="{{ route('admin.dashboard') }}" method="GET" class="grid grid-cols-2 md:grid-cols-5 gap-3">
                         <div class="col-span-2 md:col-span-1 flex items-center gap-2">
                             <span class="text-xs font-bold text-slate-500">Show</span>
                             <select name="per_page" onchange="this.form.submit()" class="text-xs border-slate-200 rounded-xl focus:ring-slate-500 w-full cursor-pointer bg-white">
@@ -94,7 +106,7 @@
                             <option value="found" {{ request('type') == 'found' ? 'selected' : '' }}>Temuan</option>
                         </select>
                         <div class="col-span-2">
-                            <input type="text" name="search" value="{{ request('search') }}" placeholder="Cari Judul / ID / Deskripsi..." class="w-full text-xs border-slate-200 rounded-xl focus:ring-slate-500 bg-white">
+                            <input type="text" name="search" x-model="search" @input="submitSearch()" placeholder="Cari Judul / ID / Deskripsi..." class="w-full text-xs border-slate-200 rounded-xl focus:ring-slate-500 bg-white">
                         </div>
                     </form>
                 </div>

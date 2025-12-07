@@ -1,5 +1,16 @@
 <x-app-layout>
-    <div class="min-h-screen bg-slate-50 font-sans">
+    <div class="min-h-screen bg-slate-50 font-sans"
+         x-data="{ 
+            search: '{{ request('search') }}',
+            isLoading: false,
+            submitSearch() {
+                this.isLoading = true;
+                clearTimeout(this.typingTimer);
+                this.typingTimer = setTimeout(() => {
+                    this.$refs.filterForm.submit();
+                }, 600);
+            }
+         }">
         
         <div class="bg-white border-b border-slate-200 shadow-sm sticky top-0 z-30">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
@@ -78,7 +89,8 @@
                         @endif
                     </div>
 
-                    <form action="{{ route('admin.claims-dashboard') }}" method="GET" class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    {{-- FORM SEARCH & FILTER DENGAN ALPINE --}}
+                    <form x-ref="filterForm" action="{{ route('admin.claims-dashboard') }}" method="GET" class="grid grid-cols-2 md:grid-cols-4 gap-3">
                         <select name="per_page" onchange="this.form.submit()" class="text-xs border-slate-200 rounded-xl focus:ring-slate-500 cursor-pointer bg-white">
                             <option value="10">10 Entries</option>
                             <option value="25">25 Entries</option>
@@ -91,7 +103,7 @@
                             <option value="completed" {{ request('status') == 'completed' ? 'selected' : '' }}>Completed</option>
                         </select>
                         <div class="col-span-2">
-                            <input type="text" name="search" value="{{ request('search') }}" placeholder="Cari Nama Barang / Pengklaim..." class="w-full text-xs border-slate-200 rounded-xl focus:ring-slate-500 bg-white">
+                            <input type="text" name="search" x-model="search" @input="submitSearch()" placeholder="Cari Nama Barang / Pengklaim..." class="w-full text-xs border-slate-200 rounded-xl focus:ring-slate-500 bg-white">
                         </div>
                     </form>
                 </div>

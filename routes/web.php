@@ -5,10 +5,18 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ItemController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\ClaimController;
+use App\Models\Item;
 
 // Halaman Depan (Bisa diakses tanpa login)
 Route::get('/', function () {
-    return view('welcome'); // Landing page
+    $stats = [
+        'lost' => Item::where('type', 'lost')->count(),
+        'found' => Item::where('type', 'found')->count(),
+        'returned' => Item::where('status', 'returned')->count(),
+    ];
+    $latestItems = Item::where('status', 'open')->latest()->take(3)->get();
+
+    return view('welcome', compact('stats', 'latestItems'));
 });
 
 // ROUTE UNTUK SEMUA USER YANG LOGIN (Mahasiswa, Admin, Security)
