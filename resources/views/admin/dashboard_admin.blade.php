@@ -142,7 +142,7 @@
                                 <td class="px-6 py-4 text-center">
                                     <span class="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide border
                                         @if($item->status == 'open') bg-sky-50 text-sky-700 border-sky-100
-                                        @elseif($item->status == 'cancelled') bg-slate-50 text-slate-500 border-slate-100
+                                        @elseif($item->status == 'cancelled') bg-rose-50 text-rose-600 border-rose-200
                                         @elseif($item->status == 'claimed') bg-yellow-50 text-yellow-700 border-yellow-100
                                         @elseif($item->status == 'returned') bg-emerald-50 text-emerald-700 border-emerald-100
                                         @endif">
@@ -150,11 +150,19 @@
                                     </span>
                                 </td>
                                 <td class="px-6 py-4 text-center">
-                                    @if($item->is_verified)
+                                    @if($item->status == 'cancelled')
+                                        {{-- LOGIC 1: Jika Status Cancelled --}}
+                                        <div class="inline-flex items-center text-rose-600 bg-rose-50 px-2 py-1 rounded-lg text-[10px] font-black border border-rose-200 shadow-sm opacity-80 cursor-not-allowed">
+                                            <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                            Cancelled
+                                        </div>
+                                    @elseif($item->is_verified)
+                                        {{-- LOGIC 2: Jika Sudah Verified --}}
                                         <div class="inline-flex items-center text-emerald-600 bg-emerald-50 px-2 py-1 rounded-lg text-[10px] font-bold border border-emerald-100">
                                             <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg> Approved
                                         </div>
                                     @else
+                                        {{-- LOGIC 3: Jika Belum Verified (Tombol Approve Muncul) --}}
                                         <form action="{{ route('admin.items.verify', $item) }}" method="POST">
                                             @csrf @method('PATCH')
                                             <button onclick="confirmSubmit(event, 'Approve laporan ini agar tampil publik?')" class="text-[10px] bg-orange-500 text-white px-3 py-1.5 rounded-lg font-bold shadow-md shadow-orange-200 hover:bg-orange-600 hover:shadow-lg transition transform hover:-translate-y-0.5">

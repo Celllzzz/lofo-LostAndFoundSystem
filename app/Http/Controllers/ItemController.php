@@ -85,7 +85,7 @@ class ItemController extends Controller
             'date' => 'required|date',
             'location' => 'required|string',
             'description' => 'required|string',
-            'image' => 'nullable|image|max:2048', // Max 2MB
+            'image' => 'required|image|max:2048', // Max 2MB
         ]);
 
         $path = null;

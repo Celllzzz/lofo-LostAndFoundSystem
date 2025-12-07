@@ -74,7 +74,7 @@ class AdminController extends Controller
                 'claimed' => Item::where('status', 'claimed')->count(),
                 'returned' => Item::where('status', 'returned')->count(),
                 'cancelled' => Item::where('status', 'cancelled')->count(),
-                'unverified' => Item::where('is_verified', false)->count(),
+                'unverified' => Item::where('is_verified', false)->where('status', 'open')->count(),
             ];
 
             // C. QUERY DATA LAPORAN (Main Table)
@@ -82,7 +82,7 @@ class AdminController extends Controller
 
             // Filter Aksi Cepat
             if ($request->get('filter') === 'unverified') {
-                $query->where('is_verified', false);
+                $query->where('is_verified', false)->where('status', 'open');
             }
 
             // Filter Pencarian & Status
@@ -146,10 +146,25 @@ class AdminController extends Controller
     // =========================================================
     // LOGIKA PROSES
     // =========================================================
-    public function verifyItem(Item $item)
+    public function verifyItem(Request $request, Item $item)
     {
-        $item->update(['is_verified' => true]);
-        return back()->with('success', 'Laporan berhasil diverifikasi.');
+        if ($request->action === 'reject') {
+            // Logika Tidak Lolos
+            $item->update([
+                'is_verified' => false,
+                'status' => 'cancelled' // Status jadi Canceled
+            ]);
+            $message = 'Barang ditolak. Status laporan diubah menjadi Cancelled.';
+        } else {
+            // Logika Lolos (Default)
+            $item->update([
+                'is_verified' => true,
+                'status' => 'open' // Status tetap Open
+            ]);
+            $message = 'Barang berhasil diverifikasi. Laporan kini tampil di publik.';
+        }
+
+        return back()->with('success', $message);
     }
 
     public function updateItemStatus(Request $request, Item $item)
